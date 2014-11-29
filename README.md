@@ -5,4 +5,4 @@ Simple standalone keylogger for Windows.
 
 ##TODO
 
-- persistence
+- networking

