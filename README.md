@@ -5,4 +5,5 @@ Simple standalone keylogger for Windows.
 
 ##TODO
 
-- share data
+- add option to copyself quit immediately
+- get user directory to copy to
