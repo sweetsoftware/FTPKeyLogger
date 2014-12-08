@@ -18,3 +18,7 @@ OpenKeyLogger uses the Simple and Fast Multimedia Library (SFML) to upload logs 
 
 For instructions on how to compile SFML, see http://sfml-dev.org/tutorials/2.0/compile-with-cmake.php
 
+##TODO
+- refactor private methods
+- name keylogfile with date
+- lifetime
